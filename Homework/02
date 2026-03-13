@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>全功能 HTML 表單範例</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; background-color: #f4f4f9; }
+        form { background: white; padding: 20px; border-radius: 8px; max-width: 600px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="tel"], input[type="url"], input[type="search"], select, textarea {
+            width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;
+        }
+        .inline-group { display: flex; align-items: center; gap: 10px; }
+        .inline-group input { width: auto; }
+        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; color: white; }
+        .btn-submit { background-color: #28a745; }
+        .btn-reset { background-color: #dc3545; }
+    </style>
+</head>
+<body>
+
+    <form action="/submit-path" method="POST">
+        <h2>🚀 綜合表單範例</h2>
+
+        <div class="form-group">
+            <label for="name">姓名 (text):</label>
+            <input type="text" id="name" name="user_name" placeholder="請輸入全名" required>
+        </div>
+
+        <div class="form-group">
+            <label for="email">電子郵件 (email):</label>
+            <input type="email" id="email" name="user_email" placeholder="example@mail.com">
+        </div>
+
+        <div class="form-group">
+            <label for="pw">密碼 (password):</label>
+            <input type="password" id="pw" name="user_password">
+        </div>
+
+        <div class="form-group">
+            <label for="age">年齡 (number):</label>
+            <input type="number" id="age" name="age" min="0" max="150" value="25">
+        </div>
+
+        <div class="form-group">
+            <label for="satisfaction">滿意度 (range: 0-100):</label>
+            <input type="range" id="satisfaction" name="satisfaction" min="0" max="100">
+        </div>
+
+        <div class="form-group">
+            <label for="bday">生日 (date):</label>
+            <input type="date" id="bday" name="birthday">
+        </div>
+
+        <div class="form-group">
+            <label for="meeting">預約時間 (datetime-local):</label>
+            <input type="datetime-local" id="meeting" name="meeting_time">
+        </div>
+
+        <div class="form-group">
+            <label>性別 (radio):</label>
+            <label class="inline-group"><input type="radio" name="gender" value="male"> 男</label>
+            <label class="inline-group"><input type="radio" name="gender" value="female"> 女</label>
+        </div>
+
+        <div class="form-group">
+            <label>興趣 (checkbox):</label>
+            <label class="inline-group"><input type="checkbox" name="hobby" value="coding"> 寫程式</label>
+            <label class="inline-group"><input type="checkbox" name="hobby" value="music"> 音樂</label>
+        </div>
+
+        <div class="form-group">
+            <label for="favcolor">最喜歡的顏色 (color):</label>
+            <input type="color" id="favcolor" name="favcolor" value="#ff0000">
+        </div>
+
+        <div class="form-group">
+            <label for="file">上傳大頭照 (file):</label>
+            <input type="file" id="file" name="profile_pic" accept="image/*">
+        </div>
+
+        <div class="form-group">
+            <label for="bio">個人簡介 (textarea):</label>
+            <textarea id="bio" name="bio" rows="4"></textarea>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button type="submit" class="btn-submit">送出表單 (submit)</button>
+            <button type="reset" class="btn-reset">重填 (reset)</button>
+            <button type="button" onclick="alert('你點擊了普通按鈕！')">普通按鈕 (button)</button>
+        </div>
+    </form>
+
+</body>
+</html>
