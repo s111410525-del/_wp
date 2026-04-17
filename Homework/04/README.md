@@ -7,7 +7,10 @@ AI 問答 https://gemini.google.com/share/43092a743e44
 ## 我的測試結果
 
 ```sh
+
 ....
+
+https://gemini.google.com/share/e03d2be8eb37
 ##1
 PS C:\chen\_wp\Homework\04> node 01-checkNumber.js
 正數
