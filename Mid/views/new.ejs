@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新文章</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; background: #f5f5f5; }
+    header { background: #333; color: #fff; padding: 1rem; }
+    header h1 { display: inline-block; }
+    header nav { float: right; }
+    header nav a { color: #fff; text-decoration: none; margin-left: 1rem; }
+    .container { max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+    input, textarea { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; font-size: 1rem; }
+    textarea { min-height: 200px; resize: vertical; }
+    .btn { padding: 0.75rem 1.5rem; background: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+    .btn:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>簡單網誌</h1>
+    <nav>
+      <a href="/">首頁</a>
+      <a href="/logout">登出</a>
+    </nav>
+  </header>
+  <div class="container">
+    <h2>新文章</h2>
+    <form action="/new" method="POST">
+      <div class="form-group">
+        <label>標題</label>
+        <input type="text" name="title" required>
+      </div>
+      <div class="form-group">
+        <label>內容</label>
+        <textarea name="content" required></textarea>
+      </div>
+      <button type="submit" class="btn">發布</button>
+    </form>
+  </div>
+</body>
+</html>
