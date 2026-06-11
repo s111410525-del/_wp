@@ -3,56 +3,74 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>新聞大盜</title>
+  <title>新聞全視界</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; background: #f5f5f5; }
-    header { background: #333; color: #fff; padding: 1rem; }
-    header h1 { display: inline-block; }
-    header nav { float: right; }
-    header nav a { color: #fff; text-decoration: none; margin-left: 1rem; }
-    .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-    .section-title { font-size: 1.5rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #007bff; }
-    .post { background: #fff; padding: 1.5rem; margin-bottom: 1rem; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; }
-    .post.news { border-left: 4px solid #28a745; }
-    .post-header { display: flex; justify-content: space-between; align-items: center; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+    header { background: rgba(0,0,0,0.8); color: #fff; padding: 1rem 2rem; backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 20px rgba(0,0,0,0.3); }
+    header h1 { display: inline-block; font-size: 1.5rem; letter-spacing: 2px; }
+    header h1 a { color: #fff; text-decoration: none; }
+    header nav { float: right; display: flex; align-items: center; gap: 0.5rem; }
+    header nav a { color: #fff; text-decoration: none; margin-left: 1rem; transition: opacity 0.2s; }
+    header nav a:hover { opacity: 0.8; }
+    .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    .section-title { font-size: 1.5rem; margin: 2rem 0 1rem; padding: 0.75rem 1rem; border-radius: 8px; background: rgba(255,255,255,0.9); box-shadow: 0 2px 8px rgba(0,0,0,0.1); color: #333; display: flex; align-items: center; gap: 0.5rem; }
+    .section-title .icon { font-size: 1.2rem; }
+    .post { background: #fff; padding: 1.5rem; margin-bottom: 1.2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; transition: transform 0.2s, box-shadow 0.2s; }
+    .post:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(0,0,0,0.15); }
+    .post.news { border-left: 5px solid #28a745; }
+    .post-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+    .post h2 { font-size: 1.2rem; line-height: 1.4; }
     .post h2 a { color: #333; text-decoration: none; }
     .post h2 a:hover { color: #007bff; }
-    .post .meta { color: #666; font-size: 0.9rem; margin-bottom: 0.5rem; }
-    .post .content { color: #444; }
-    .post .actions { display: flex; gap: 1rem; align-items: center; margin-top: 1rem; }
-    .badge { display: inline-block; padding: 0.25rem 0.5rem; background: #28a745; color: #fff; font-size: 0.75rem; border-radius: 4px; margin-right: 0.5rem; }
+    .post .meta { color: #888; font-size: 0.85rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .post .meta .link-label { color: #28a745; font-weight: bold; font-size: 0.85rem; }
+    .post .meta .news-link { color: #007bff; word-break: break-all; font-size: 0.85rem; text-decoration: none; transition: color 0.2s; }
+    .post .meta .news-link:hover { color: #0056b3; text-decoration: underline; }
+    .post .content { color: #555; font-size: 0.95rem; line-height: 1.7; }
+    .post .actions { display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem; flex-wrap: wrap; }
+    .badge { display: inline-block; padding: 0.25rem 0.6rem; color: #fff; font-size: 0.7rem; border-radius: 20px; margin-right: 0.5rem; font-weight: bold; letter-spacing: 0.5px; }
     .badge-BBC { background: #bb1919; }
     .badge-CNN { background: #cc0000; }
     .badge-Reuters { background: #ff8000; }
     .badge-NPR { background: #2986bc; }
     .badge-ABC { background: #000; }
-    .btn { display: inline-block; padding: 0.5rem 1rem; background: #007bff; color: #fff; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; }
-    .btn:hover { background: #0056b3; }
+    .badge-BBC中文 { background: #bb1919; }
+    .badge-香港電台 { background: #00843d; }
+    .btn { display: inline-block; padding: 0.4rem 0.8rem; background: #007bff; color: #fff; text-decoration: none; border-radius: 6px; border: none; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+    .btn:hover { background: #0056b3; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,123,255,0.3); }
     .btn-danger { background: #dc3545; }
-    .btn-danger:hover { background: #c82333; }
+    .btn-danger:hover { background: #c82333; box-shadow: 0 2px 8px rgba(220,53,69,0.3); }
     .btn-like { background: #28a745; }
-    .btn-like:hover { background: #218838; }
-    .btn-like.liked { opacity: 0.8; }
+    .btn-like:hover { background: #218838; box-shadow: 0 2px 8px rgba(40,167,69,0.3); }
+    .btn-like.liked { opacity: 0.7; }
     .btn-report { background: #ffc107; color: #333; }
-    .btn-report:hover { background: #e0a800; }
+    .btn-report:hover { background: #e0a800; color: #333; box-shadow: 0 2px 8px rgba(255,193,7,0.3); }
     .btn-favorite { background: #e91e63; }
-    .btn-favorite:hover { background: #c2185b; }
-    .btn-favorite.favorited { background: #e91e63; opacity: 0.8; }
-    .like-count { color: #28a745; font-weight: bold; }
+    .btn-favorite:hover { background: #c2185b; box-shadow: 0 2px 8px rgba(233,30,99,0.3); }
+    .btn-favorite.favorited { background: #e91e63; opacity: 0.7; }
+    .like-count { color: #28a745; font-weight: bold; font-size: 0.85rem; }
+    .btn-translate { background: #17a2b8; }
+    .btn-translate:hover { background: #138496; box-shadow: 0 2px 8px rgba(23,162,184,0.3); }
+    .translation-box { background: #e7f3ff; padding: 1rem; border-radius: 8px; margin-top: 0.5rem; font-size: 0.95rem; display: none; border: 1px solid #b3d7ff; }
+    .translation-box .t-title { font-weight: bold; margin-bottom: 0.5rem; color: #0066cc; }
+    .translation-box .t-content { color: #333; }
+    .btn-external { background: #6c757d; }
+    .btn-external:hover { background: #545b62; box-shadow: 0 2px 8px rgba(108,117,125,0.3); }
+    .footer-text { text-align: center; color: rgba(255,255,255,0.7); padding: 2rem; font-size: 0.85rem; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>新聞大盜</h1>
+    <header>
+    <h1><a href="/">📰 新聞全視界</a></h1>
     <nav>
       <% if (user) { %>
-        <span>你好, <%= user.username %></span>
-        <a href="/new" class="btn">新文章</a>
-        <a href="/favorites">收藏</a>
-        <a href="/logout">登出</a>
+        <span style="opacity:0.8;">👋 <%= user.username %></span>
+        <a href="/new" class="btn">✏️ 新文章</a>
+        <a href="/favorites" style="margin-left:0.5rem;">⭐ 收藏</a>
+        <a href="/logout" style="margin-left:0.5rem;">🚪 登出</a>
       <% } else { %>
-        <a href="/login">登入</a>
+        <a href="/login">🔑 登入</a>
       <% } %>
     </nav>
   </header>
@@ -60,8 +78,8 @@
     <% const userPosts = posts.filter(p => !p.is_news); %>
     <% const newsPosts = posts.filter(p => p.is_news); %>
     
-    <% if (userPosts.length > 0) { %>
-      <h2 class="section-title">我的文章</h2>
+    <% if (user && userPosts.length > 0) { %>
+      <h2 class="section-title"><span class="icon">📝</span> 我的文章</h2>
       <% userPosts.forEach(post => { %>
         <div class="post">
           <div class="post-header">
@@ -104,7 +122,7 @@
     <% } %>
     
     <% if (newsPosts.length > 0) { %>
-      <h2 class="section-title">最新新聞 <span style="font-size:0.8rem; color:#666;">(每5分鐘自動更新)</span></h2>
+      <h2 class="section-title"><span class="icon">🌍</span> 最新新聞 <span style="font-size:0.8rem; color:#888; font-weight:normal;">(每5分鐘自動更新)</span></h2>
       <% newsPosts.forEach(post => { %>
         <div class="post news">
           <div class="post-header">
@@ -114,13 +132,12 @@
             </h2>
           </div>
           <div class="meta">
-            <span style="color:#28a745;">新聞來源: </span>
             <% if (post.news_link) { %>
-              <a href="<%= post.news_link %>" target="_blank" style="color:#007bff; word-break:break-all;"><%= post.news_link %></a>
-            <% } else { %>
-              <span style="color:#666;">無連結</span>
+              <span class="link-label">文章連結</span>
+              <a href="<%= post.news_link %>" target="_blank" class="news-link"><%= post.news_link %></a>
+              <span style="color:#ccc;">|</span>
             <% } %>
-            | <%= new Date(post.created_at).toLocaleString('zh-TW') %>
+            <span><%= new Date(post.created_at).toLocaleString('zh-TW') %></span>
           </div>
           <div class="content"><%= post.content.substring(0, 200) %><%= post.content.length > 200 ? '...' : '' %></div>
           <div class="actions">
@@ -146,7 +163,11 @@
             <% if (post.news_link) { %>
               <a href="<%= post.news_link %>" target="_blank" class="btn" style="margin-left:auto;">閱讀原文</a>
             <% } %>
+            <% if (post.news_source && !/[\u4e00-\u9fff]/.test(post.news_source)) { %>
+              <button class="btn btn-translate" onclick="translateNews(<%= post.id %>, this)">翻譯成中文</button>
+            <% } %>
           </div>
+          <div id="translation-<%= post.id %>" class="translation-box"></div>
         </div>
       <% }) %>
     <% } %>
@@ -163,6 +184,33 @@
       }).catch(() => {
         prompt('複製以下連結:', url);
       });
+    }
+    async function translateNews(id, btn) {
+      const box = document.getElementById('translation-' + id);
+      if (box.style.display === 'block') {
+        box.style.display = 'none';
+        btn.textContent = '翻譯成中文';
+        return;
+      }
+      if (box.innerHTML) {
+        box.style.display = 'block';
+        btn.textContent = '隱藏翻譯';
+        return;
+      }
+      btn.textContent = '翻譯中...';
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/translate/' + id);
+        const data = await res.json();
+        box.innerHTML = '<div class="t-title">' + data.title + '</div><div class="t-content">' + data.content + '</div>';
+        box.style.display = 'block';
+        btn.textContent = '隱藏翻譯';
+      } catch (e) {
+        alert('翻譯失敗，請稍後再試');
+        btn.textContent = '翻譯成中文';
+      } finally {
+        btn.disabled = false;
+      }
     }
   </script>
 </body>

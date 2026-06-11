@@ -7,7 +7,7 @@ const fs = require('fs');
 const axios = require('axios');
 
 const app = express();
-const PORT = 3000;
+const PORT = 8080;
 
 async function translateText(text, targetLang = 'zh-TW') {
   try {
@@ -53,11 +53,12 @@ async function fetchNewsFromSource(name, url, limit = 8) {
       const item = match[1];
       const titleMatch = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || item.match(/<title>(.*?)<\/title>/);
       const descMatch = item.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || item.match(/<description>(.*?)<\/description>/);
-      const linkMatch = item.match(/<link>(.*?)<\/link>/);
+      const linkMatch = item.match(/<link><!\[CDATA\[(.*?)\]\]><\/link>/) || item.match(/<link>(.*?)<\/link>/) || item.match(/<guid[^>]*isPermaLink=["']true["'][^>]*>(https?:\/\/.*?)<\/guid>/);
       const pubDateMatch = item.match(/<pubDate>(.*?)<\/pubDate>/);
       if (titleMatch) {
-        let link = linkMatch ? linkMatch[1] : '';
+        let link = linkMatch ? linkMatch[1].trim() : '';
         link = link.replace(/^http:\/\//, 'https://');
+        if (link && !link.startsWith('https://')) link = '';
         items.push({
           title: titleMatch[1].replace(/<[^>]+>/g, '').trim(),
           description: descMatch ? descMatch[1].replace(/<[^>]+>/g, '').substring(0, 300).trim() : '',
@@ -81,7 +82,9 @@ async function fetchNews() {
     { name: 'CNN', url: 'http://rss.cnn.com/rss/edition.rss' },
     { name: 'Reuters', url: 'https://www.reutersagency.com/feed/?taxonomy=best-topics&post_type=best' },
     { name: ' NPR', url: 'https://feeds.npr.org/1001/rss.xml' },
-    { name: 'ABC News', url: 'https://abcnews.go.com/abcnews/topstories.rss' }
+    { name: 'ABC News', url: 'https://abcnews.go.com/abcnews/topstories.rss' },
+    { name: 'BBC中文', url: 'https://feeds.bbci.co.uk/zhongwen/trad/rss.xml' },
+    { name: '香港電台', url: 'https://rthk.hk/rthk/news/rss/rss_news.xml' }
   ];
   
   const allNews = [];
@@ -199,9 +202,9 @@ function saveDB() {
 }
 
 app.get('/', async (req, res) => {
-  const posts = db.exec('SELECT p.*, u.username, (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count FROM posts p LEFT JOIN users u ON p.user_id = u.id ORDER BY p.created_at DESC');
+  const posts = db.exec('SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.is_news, p.news_link, p.news_source, u.username, (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count FROM posts p LEFT JOIN users u ON p.user_id = u.id ORDER BY p.created_at DESC');
   const data = posts[0] ? posts[0].values.map(row => ({
-    id: row[0], user_id: row[1], title: row[2], content: row[3], created_at: row[4], username: row[5], like_count: row[6], is_news: row[7], news_link: row[8], news_source: row[9]
+    id: row[0], user_id: row[1], title: row[2], content: row[3], created_at: row[4], is_news: row[5], news_link: row[6], news_source: row[7], username: row[8], like_count: row[9]
   })) : [];
   const userLikes = req.session.user ? db.exec('SELECT post_id FROM likes WHERE user_id = ?', [req.session.user.id]) : null;
   const likedPosts = userLikes && userLikes[0] ? userLikes[0].values.map(r => r[0]) : [];
@@ -210,16 +213,16 @@ app.get('/', async (req, res) => {
   
   await refreshNews();
   
-  const allPosts = db.exec('SELECT p.*, u.username, (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count FROM posts p LEFT JOIN users u ON p.user_id = u.id ORDER BY p.created_at DESC');
+  const allPosts = db.exec('SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.is_news, p.news_link, p.news_source, u.username, (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count FROM posts p LEFT JOIN users u ON p.user_id = u.id ORDER BY p.created_at DESC');
   const allData = allPosts[0] ? allPosts[0].values.map(row => ({
-    id: row[0], user_id: row[1], title: row[2], content: row[3], created_at: row[4], username: row[5], like_count: row[6], is_news: row[7], news_link: row[8], news_source: row[9]
+    id: row[0], user_id: row[1], title: row[2], content: row[3], created_at: row[4], is_news: row[5], news_link: row[6], news_source: row[7], username: row[8], like_count: row[9]
   })) : [];
   
   res.render('index', { posts: allData, user: req.session.user, likedPosts, favoritePosts });
 });
 
 app.get('/post/:id', async (req, res) => {
-  const post = db.exec('SELECT p.*, u.username, (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count FROM posts p LEFT JOIN users u ON p.user_id = u.id WHERE p.id = ?', [req.params.id]);
+  const post = db.exec('SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.is_news, p.news_link, p.news_source, u.username, (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count FROM posts p LEFT JOIN users u ON p.user_id = u.id WHERE p.id = ?', [req.params.id]);
   if (post[0] && post[0].values.length > 0) {
     const row = post[0].values[0];
     const comments = db.exec('SELECT c.*, u.username FROM comments c LEFT JOIN users u ON c.user_id = u.id WHERE c.post_id = ? ORDER BY c.created_at ASC', [req.params.id]);
@@ -230,6 +233,9 @@ app.get('/post/:id', async (req, res) => {
 const isLiked = req.session.user ? db.exec('SELECT * FROM likes WHERE post_id = ? AND user_id = ?', [req.params.id, req.session.user.id]) : null;
     const isFavorited = req.session.user ? db.exec('SELECT * FROM favorites WHERE post_id = ? AND user_id = ?', [req.params.id, req.session.user.id]) : null;
     
+    let translatedTitle = row[2];
+    let translatedContent = row[3];
+    let isTranslated = false;
     if (req.query.lang === 'zh') {
       translatedTitle = await translateText(row[2], 'zh-TW');
       translatedContent = await translateText(row[3], 'zh-TW');
@@ -237,7 +243,7 @@ const isLiked = req.session.user ? db.exec('SELECT * FROM likes WHERE post_id = 
     }
     
     res.render('post', { 
-      post: { id: row[0], user_id: row[1], title: translatedTitle, content: translatedContent, created_at: row[4], username: row[5], like_count: row[6], is_news: row[7], news_link: row[8], news_source: row[9], original_title: row[2], original_content: row[3] }, 
+      post: { id: row[0], user_id: row[1], title: translatedTitle, content: translatedContent, created_at: row[4], is_news: row[5], news_link: row[6], news_source: row[7], username: row[8], like_count: row[9], original_title: row[2], original_content: row[3] }, 
       user: req.session.user, 
       comments: commentData,
       likeCount: likeCount[0] ? likeCount[0].values[0][0] : 0,
@@ -367,9 +373,9 @@ app.post('/favorite/:id', (req, res) => {
 
 app.get('/favorites', (req, res) => {
   if (!req.session.user) return res.redirect('/login');
-  const favorites = db.exec('SELECT p.*, u.username, (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count FROM posts p LEFT JOIN users u ON p.user_id = u.id INNER JOIN favorites f ON p.id = f.post_id WHERE f.user_id = ? ORDER BY f.id DESC', [req.session.user.id]);
+  const favorites = db.exec('SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.is_news, p.news_link, p.news_source, u.username, (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count FROM posts p LEFT JOIN users u ON p.user_id = u.id INNER JOIN favorites f ON p.id = f.post_id WHERE f.user_id = ? ORDER BY f.id DESC', [req.session.user.id]);
   const data = favorites[0] ? favorites[0].values.map(row => ({
-    id: row[0], user_id: row[1], title: row[2], content: row[3], created_at: row[4], username: row[5], like_count: row[6], is_news: row[7], news_link: row[8], news_source: row[9]
+    id: row[0], user_id: row[1], title: row[2], content: row[3], created_at: row[4], is_news: row[5], news_link: row[6], news_source: row[7], username: row[8], like_count: row[9]
   })) : [];
   const userLikes = db.exec('SELECT post_id FROM likes WHERE user_id = ?', [req.session.user.id]);
   const likedPosts = userLikes && userLikes[0] ? userLikes[0].values.map(r => r[0]) : [];
@@ -419,6 +425,18 @@ app.post('/delete/:id', (req, res) => {
   db.run('DELETE FROM posts WHERE id = ?', [req.params.id]);
   saveDB();
   res.redirect('/');
+});
+
+app.get('/api/translate/:id', async (req, res) => {
+  const post = db.exec('SELECT title, content FROM posts WHERE id = ? AND is_news = 1', [req.params.id]);
+  if (post[0] && post[0].values.length > 0) {
+    const row = post[0].values[0];
+    const translatedTitle = await translateText(row[0]);
+    const translatedContent = await translateText(row[1]);
+    res.json({ title: translatedTitle, content: translatedContent });
+  } else {
+    res.status(404).json({ error: '文章不存在' });
+  }
 });
 
 initDB().then(() => {
