@@ -231,13 +231,14 @@ if (existing) {
 ### 新聞 RSS 來源
 ```
 BBC News:   https://feeds.bbci.co.uk/news/rss.xml
-CNN:        http://rss.cnn.com/rss/edition.rss
-Reuters:    https://www.reutersagency.com/feed/...
+CNN:        https://rss.cnn.com/rss/edition.rss
+Reuters:    https://news.google.com/rss/search?q=when:24h+allinurl:reuters.com
 NPR:        https://feeds.npr.org/1001/rss.xml
-ABC News:   https://abcnews.go.com/abcnews/topstories.rss
+ABC News:   https://feeds.abcnews.com/abcnews/topstories
 BBC中文:    https://feeds.bbci.co.uk/zhongwen/trad/rss.xml
 香港電台:   https://rthk.hk/rthk/news/rss/rss_news.xml
 ```
+> Reuters 已於 2020 年關閉官方 RSS，改用 Google News RSS 搜尋替代
 
 ### MyMemory 翻譯 API
 ```
@@ -287,6 +288,80 @@ npm start
 | 階段六 | 收藏功能 |
 | 階段七 | 品牌更名為「新聞全視界」 |
 | 階段八 | 新聞來源網址改為超連結、修正欄位對應 bug、UI 調整 |
+| 階段九 | 修正新聞不更新 bug（sql.js 的 `stmt.step()` 未呼叫導致重複檢查失效） |
+| 階段十 | 修復 RSS 來源斷線（Reuters 停用 RSS、CNN HTTP→HTTPS、ABC News URL 更新） |
+| 階段十一 | 修正新聞日期排序（pubDate 轉 ISO 8601 格式）、新增 /refresh 手動更新路由 |
+| 階段十二 | 移除 GET / 中阻塞的 refreshNews、setInterval 加上 try-catch 防止程序崩潰 |
+
+---
+
+## 如何在其他電腦開啟本網頁
+
+本系統啟動後，同一區域網路（LAN）內的其他裝置可以透過以下方式連線：
+
+### 1. 確認本機 IP 位址
+
+在伺服器電腦上打開命令提示字元或 PowerShell，輸入：
+
+```powershell
+ipconfig
+```
+
+找到你的 IPv4 位址（通常長這樣：`192.168.x.x` 或 `10.x.x.x`）。
+
+### 2. 啟動伺服器（同原有步驟）
+
+```bash
+cd C:\chen\_wp\Mid
+npm start
+```
+
+你會看到：
+```
+Blog running at http://localhost:8080
+```
+
+### 3. 其他裝置連線
+
+在同一個 Wi-Fi 或區域網路下的任何裝置（手機、平板、其他電腦），打開瀏覽器輸入：
+
+```
+http://192.168.x.x:8080
+```
+
+（請將 `192.168.x.x` 換成你第一步找到的真實 IP）
+
+### 4. 常見問題
+
+| 問題 | 解決方法 |
+|------|----------|
+| 連不上、網頁載入失敗 | 檢查伺服器電腦的防火牆是否允許 `8080` 埠 |
+| `ERR_CONNECTION_REFUSED` | 確認伺服器正在執行，且本機 localhost 可正常開啟 |
+| 手機連不上 | 確認手機和電腦使用同一個 Wi-Fi 網路 |
+| 想使用其他埠號 | 修改 `server.js` 中的 `PORT` 變數後重啟 |
+
+### 5. 防火牆設定（Windows）
+
+若其他裝置連不上，需要在 Windows 防火牆開放 `8080` 埠：
+
+```powershell
+# 以系統管理員身分執行
+New-NetFirewallRule -DisplayName "Blog 8080" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow
+```
+
+### 6. 手動更新新聞
+
+伺服器每 5 分鐘自動更新新聞，若想立即刷新，在瀏覽器網址列輸入：
+
+```
+http://localhost:8080/refresh
+```
+
+或從其他裝置：
+
+```
+http://192.168.x.x:8080/refresh
+```
 
 ---
 

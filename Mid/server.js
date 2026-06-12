@@ -63,7 +63,7 @@ async function fetchNewsFromSource(name, url, limit = 8) {
           title: titleMatch[1].replace(/<[^>]+>/g, '').trim(),
           description: descMatch ? descMatch[1].replace(/<[^>]+>/g, '').substring(0, 300).trim() : '',
           link: link,
-          pubDate: pubDateMatch ? pubDateMatch[1] : new Date().toISOString(),
+          pubDate: pubDateMatch ? new Date(pubDateMatch[1]).toISOString() : new Date().toISOString(),
           source: name
         });
         count++;
@@ -79,10 +79,10 @@ async function fetchNewsFromSource(name, url, limit = 8) {
 async function fetchNews() {
   const sources = [
     { name: 'BBC News', url: 'https://feeds.bbci.co.uk/news/rss.xml' },
-    { name: 'CNN', url: 'http://rss.cnn.com/rss/edition.rss' },
-    { name: 'Reuters', url: 'https://www.reutersagency.com/feed/?taxonomy=best-topics&post_type=best' },
-    { name: ' NPR', url: 'https://feeds.npr.org/1001/rss.xml' },
-    { name: 'ABC News', url: 'https://abcnews.go.com/abcnews/topstories.rss' },
+    { name: 'CNN', url: 'https://rss.cnn.com/rss/edition.rss' },
+    { name: 'Reuters', url: 'https://news.google.com/rss/search?q=when:24h+allinurl:reuters.com&ceid=US:en&hl=en-US&gl=US' },
+    { name: 'NPR', url: 'https://feeds.npr.org/1001/rss.xml' },
+    { name: 'ABC News', url: 'https://feeds.abcnews.com/abcnews/topstories' },
     { name: 'BBC中文', url: 'https://feeds.bbci.co.uk/zhongwen/trad/rss.xml' },
     { name: '香港電台', url: 'https://rthk.hk/rthk/news/rss/rss_news.xml' }
   ];
@@ -97,22 +97,33 @@ async function fetchNews() {
 }
 
 async function refreshNews() {
-  const newsArticles = await fetchNews();
-  newsArticles.forEach(news => {
-    const existing = db.exec("SELECT id FROM posts WHERE title = ? AND is_news = 1", [news.title]);
-    if (!existing[0] || existing[0].values.length === 0) {
-      db.run('INSERT INTO posts (title, content, is_news, news_link, created_at, news_source) VALUES (?, ?, 1, ?, ?, ?)', 
-        [news.title, news.description, news.link, news.pubDate, news.source]);
+  try {
+    const newsArticles = await fetchNews();
+    let inserted = 0;
+    for (const news of newsArticles) {
+      if (!news.title) continue;
+      const stmt = db.prepare("SELECT id FROM posts WHERE title = ? AND is_news = 1");
+      stmt.bind([news.title]);
+      const hasRow = stmt.step();
+      stmt.free();
+      if (!hasRow) {
+        db.run('INSERT INTO posts (title, content, is_news, news_link, created_at, news_source) VALUES (?, ?, 1, ?, ?, ?)', 
+          [news.title, news.description, news.link, news.pubDate, news.source]);
+        inserted++;
+      }
     }
-  });
-  const newsPosts = db.exec("SELECT id, created_at FROM posts WHERE is_news = 1 ORDER BY created_at DESC");
-  if (newsPosts[0] && newsPosts[0].values.length > 30) {
-    const postsToDelete = newsPosts[0].values.slice(30).map(r => r[0]);
-    postsToDelete.forEach(id => {
-      db.run('DELETE FROM posts WHERE id = ?', [id]);
-    });
+    const newsPosts = db.exec("SELECT id, created_at FROM posts WHERE is_news = 1 ORDER BY created_at DESC");
+    if (newsPosts[0] && newsPosts[0].values.length > 30) {
+      const postsToDelete = newsPosts[0].values.slice(30).map(r => r[0]);
+      for (const id of postsToDelete) {
+        db.run('DELETE FROM posts WHERE id = ?', [id]);
+      }
+    }
+    saveDB();
+    console.log(`[News] Fetched ${newsArticles.length}, inserted ${inserted} new articles`);
+  } catch (error) {
+    console.error('[News] Refresh error:', error.message);
   }
-  saveDB();
 }
 
 setInterval(refreshNews, 5 * 60 * 1000);
@@ -202,8 +213,8 @@ function saveDB() {
 }
 
 app.get('/', async (req, res) => {
-  const posts = db.exec('SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.is_news, p.news_link, p.news_source, u.username, (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count FROM posts p LEFT JOIN users u ON p.user_id = u.id ORDER BY p.created_at DESC');
-  const data = posts[0] ? posts[0].values.map(row => ({
+  const result = db.exec('SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.is_news, p.news_link, p.news_source, u.username, (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count FROM posts p LEFT JOIN users u ON p.user_id = u.id ORDER BY p.created_at DESC');
+  const posts = result[0] ? result[0].values.map(row => ({
     id: row[0], user_id: row[1], title: row[2], content: row[3], created_at: row[4], is_news: row[5], news_link: row[6], news_source: row[7], username: row[8], like_count: row[9]
   })) : [];
   const userLikes = req.session.user ? db.exec('SELECT post_id FROM likes WHERE user_id = ?', [req.session.user.id]) : null;
@@ -211,14 +222,7 @@ app.get('/', async (req, res) => {
   const userFavorites = req.session.user ? db.exec('SELECT post_id FROM favorites WHERE user_id = ?', [req.session.user.id]) : null;
   const favoritePosts = userFavorites && userFavorites[0] ? userFavorites[0].values.map(r => r[0]) : [];
   
-  await refreshNews();
-  
-  const allPosts = db.exec('SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.is_news, p.news_link, p.news_source, u.username, (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count FROM posts p LEFT JOIN users u ON p.user_id = u.id ORDER BY p.created_at DESC');
-  const allData = allPosts[0] ? allPosts[0].values.map(row => ({
-    id: row[0], user_id: row[1], title: row[2], content: row[3], created_at: row[4], is_news: row[5], news_link: row[6], news_source: row[7], username: row[8], like_count: row[9]
-  })) : [];
-  
-  res.render('index', { posts: allData, user: req.session.user, likedPosts, favoritePosts });
+  res.render('index', { posts, user: req.session.user, likedPosts, favoritePosts });
 });
 
 app.get('/post/:id', async (req, res) => {
@@ -439,7 +443,13 @@ app.get('/api/translate/:id', async (req, res) => {
   }
 });
 
-initDB().then(() => {
+app.get('/refresh', async (req, res) => {
+  await refreshNews();
+  res.redirect('/');
+});
+
+initDB().then(async () => {
+  try { await refreshNews(); } catch (e) { console.error('Initial news fetch error:', e.message); }
   app.listen(PORT, () => {
     console.log(`Blog running at http://localhost:${PORT}`);
   });
